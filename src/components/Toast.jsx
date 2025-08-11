@@ -61,7 +61,7 @@ const Toast = ({
       case 'bottom-left':
         return 'bottom-4 left-4';
       case 'bottom-right':
-        return 'bottom-4 right-4';
+        return 'bottom-24 right-4';
       case 'bottom-center':
         return 'bottom-4 left-1/2 -translate-x-1/2';
       default:

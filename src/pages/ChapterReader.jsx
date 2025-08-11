@@ -215,38 +215,45 @@ const ChapterReader = () => {
         className={`sticky top-0 z-40 ${themeStyles.bg} border-b ${themeStyles.border} shadow-sm`}
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Back to story */}
-            {story && (
-              <Link
-                to={`/stories/${story.id}`}
-                className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                <ArrowLeft size={20} className="mr-2" />
-                <span className="hidden sm:inline">{story.title}</span>
-              </Link>
-            )}
+          <div className="grid grid-cols-3 items-center h-16">
+            {/* Back to story - Left section */}
+            <div className="flex items-center justify-start">
+              {story && (
+                <Link
+                  to={`/stories/${story.id}`}
+                  className="flex items-center text-blue-600 hover:text-blue-800 transition-colors max-w-full"
+                >
+                  <ArrowLeft size={20} className="mr-2 flex-shrink-0" />
+                  <span className="hidden sm:inline truncate" title={story.title}>
+                    {story.title}
+                  </span>
+                </Link>
+              )}
+            </div>
 
-            {/* Chapter title */}
-            <div className="flex-1 text-center">
+            {/* Chapter title - Center section */}
+            <div className="flex items-center justify-center">
               <h1
-                className={`text-lg font-semibold ${themeStyles.text} truncate max-w-md mx-auto`}
+                className={`text-lg font-semibold ${themeStyles.text} truncate max-w-xs text-center`}
+                title={chapter.title}
               >
                 {chapter.title}
               </h1>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center space-x-2">
+            {/* Actions - Right section */}
+            <div className="flex items-center justify-end space-x-2">
               <button
                 onClick={() => setShowSettings(!showSettings)}
                 className={`p-2 rounded-lg hover:bg-gray-100 ${themeStyles.text}`}
+                title="Cài đặt đọc"
               >
                 <Settings size={20} />
               </button>
               <button
                 onClick={handleShare}
                 className={`p-2 rounded-lg hover:bg-gray-100 ${themeStyles.text}`}
+                title="Chia sẻ"
               >
                 <Share2 size={20} />
               </button>
@@ -352,7 +359,7 @@ const ChapterReader = () => {
       {/* Floating Settings Button */}
       <button
         onClick={() => setShowSettings(!showSettings)}
-        className={`fixed bottom-6 right-6 z-40 p-3 rounded-full shadow-lg hover:shadow-xl transition-all ${
+        className={`fixed bottom-6 left-6 z-30 p-3 rounded-full shadow-lg hover:shadow-xl transition-all ${
           theme === 'dark' 
             ? 'bg-gray-800 text-white hover:bg-gray-700' 
             : theme === 'sepia'

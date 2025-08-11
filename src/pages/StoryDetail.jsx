@@ -5,6 +5,7 @@ import useAuthStore from "../store/authStore";
 import Comments from "../components/Comments";
 import RatingModal from "../components/RatingModal";
 import Toast from "../components/Toast";
+import ChapterTitle from "../components/ui/ChapterTitle";
 import {
   Star,
   Eye,
@@ -211,7 +212,7 @@ const StoryDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Đang tải thông tin truyện...</p>
@@ -222,7 +223,7 @@ const StoryDetail = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg max-w-md">
             {error}
@@ -234,7 +235,7 @@ const StoryDetail = () => {
 
   if (!story) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Không tìm thấy truyện</p>
         </div>
@@ -243,9 +244,9 @@ const StoryDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <div className="bg-white shadow-lg border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             {/* Cover Image */}
@@ -275,8 +276,8 @@ const StoryDetail = () => {
             <div className="lg:col-span-2">
               <div className="space-y-6">
                 <div>
-                  <h1 className="text-4xl font-bold mb-4">{story.title}</h1>
-                  <p className="text-xl text-blue-100 mb-4">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-4">{story.title}</h1>
+                  <p className="text-xl text-gray-700 mb-4">
                     {story.description}
                   </p>
                 </div>
@@ -284,44 +285,44 @@ const StoryDetail = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-gray-900">
                       {formatNumber(story.viewCount || 0)}
                     </div>
-                    <div className="text-blue-100 text-sm">Lượt xem</div>
+                    <div className="text-gray-600 text-sm">Lượt xem</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-gray-900">
                       {story.chapters?.length || 0}
                     </div>
-                    <div className="text-blue-100 text-sm">Chương</div>
+                    <div className="text-gray-600 text-sm">Chương</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-gray-900">
                       {story.reviewCount || 0}
                     </div>
-                    <div className="text-blue-100 text-sm">Đánh giá</div>
+                    <div className="text-gray-600 text-sm">Đánh giá</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold flex items-center justify-center">
-                      <Star size={20} className="mr-1 fill-current" />
+                    <div className="text-2xl font-bold text-gray-900 flex items-center justify-center">
+                      <Star size={20} className="mr-1 fill-current text-yellow-500" />
                       {story.averageRating
                         ? parseFloat(story.averageRating).toFixed(1)
                         : "N/A"}
                     </div>
-                    <div className="text-blue-100 text-sm">Điểm</div>
+                    <div className="text-gray-600 text-sm">Điểm</div>
                   </div>
                 </div>
 
                 {/* Author */}
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                    <User size={24} />
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                    <User size={24} className="text-gray-600" />
                   </div>
                   <div>
-                    <div className="text-sm text-blue-100">Tác giả</div>
+                    <div className="text-sm text-gray-600">Tác giả</div>
                     <Link
                       to={`/stories?author=${story.author?.id}`}
-                      className="font-semibold hover:underline cursor-pointer"
+                      className="font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                     >
                       {story.author?.username || "Không xác định"}
                     </Link>
@@ -335,7 +336,7 @@ const StoryDetail = () => {
                       <Link
                         key={category.id}
                         to={`/stories?category=${category.slug}`}
-                        className="px-3 py-1 bg-white/20 rounded-full text-sm hover:bg-white/30 transition-colors cursor-pointer"
+                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full text-sm transition-colors cursor-pointer"
                       >
                         {category.name}
                       </Link>
@@ -361,7 +362,7 @@ const StoryDetail = () => {
                     className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
                       isBookmarked
                         ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                        : "bg-white/20 hover:bg-white/30 text-white"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-800"
                     }`}
                   >
                     {bookmarkLoading ? (
@@ -376,7 +377,7 @@ const StoryDetail = () => {
 
                   <button
                     onClick={handleShare}
-                    className="flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors"
                   >
                     <Share2 className="h-5 w-5 mr-2" />
                     Chia sẻ
@@ -385,7 +386,7 @@ const StoryDetail = () => {
                   <button
                     onClick={handleRatingClick}
                     disabled={ratingLoading}
-                    className="flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors"
                   >
                     {ratingLoading ? (
                       <Loader2 className="animate-spin h-5 w-5 mr-2" />
@@ -435,9 +436,10 @@ const StoryDetail = () => {
                           {chapter.chapterNumber}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate" title={chapter.title}>
-                            {chapter.title}
-                          </div>
+                          <ChapterTitle 
+                            title={chapter.title} 
+                            className="mb-1"
+                          />
                           <div className="text-sm text-gray-500">
                             {new Date(chapter.createdAt).toLocaleDateString(
                               "vi-VN"
@@ -491,8 +493,13 @@ const StoryDetail = () => {
                       <span className="text-sm text-gray-600">Chương cuối đã đọc:</span>
                     </div>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="font-medium text-gray-900 truncate" title={readingProgress.lastReadChapter.title}>
-                        Chương {readingProgress.lastReadChapter.chapterNumber}: {readingProgress.lastReadChapter.title}
+                      <div className="font-medium text-gray-900">
+                        Chương {readingProgress.lastReadChapter.chapterNumber}: 
+                        <ChapterTitle 
+                          title={readingProgress.lastReadChapter.title} 
+                          className="ml-1"
+                          inline={true}
+                        />
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
                         Đọc lần cuối: {new Date(readingProgress.lastReadChapter.lastReadAt).toLocaleDateString('vi-VN')}

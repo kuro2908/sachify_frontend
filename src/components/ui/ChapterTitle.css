@@ -1,0 +1,33 @@
+/* ChapterTitle Component Styles */
+.chapter-title-container {
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.chapter-title-text {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+  transition: transform 0.3s ease-out;
+}
+
+/* Hover effect for marquee */
+.chapter-title-container:hover .chapter-title-text {
+  transform: translateX(-100%);
+  transition: transform 8s linear;
+}
+
+/* Ensure proper text rendering */
+.chapter-title-text {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .chapter-title-container {
+    max-width: calc(100vw - 120px);
+  }
+}

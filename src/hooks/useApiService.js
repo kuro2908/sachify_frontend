@@ -1,13 +1,14 @@
 // hooks/useApiService.js
 import { useState, useCallback } from "react";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import apiService from "../lib/ApiService";
+import { useToast } from "../contexts/ToastContext";
 
 export function useApiService() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { showError, showSuccess } = useToast();
 
   // Helper function to handle errors
   const handleError = useCallback((err) => {
@@ -40,7 +41,7 @@ export function useApiService() {
     }
 
     setError(message);
-    toast.error(message);
+    showError(message);
 
     // Redirect to error page for network errors
     if (shouldRedirect) {
@@ -75,7 +76,7 @@ export function useApiService() {
         throw new Error(`API method "${method}" not found`);
       }
       const result = await apiService[method](...args);
-      toast.success("Action completed successfully!");
+      showSuccess("Action completed successfully!");
       return result;
     } catch (err) {
       throw handleError(err);

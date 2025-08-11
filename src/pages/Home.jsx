@@ -7,7 +7,7 @@ import HeroSlider from "../components/ui/HeroSlider";
 import FeaturedBooks from "../components/ui/FeaturedBooks";
 import StatsSection from "../components/ui/StatsSection";
 import Footer from "../components/ui/Footer";
-import { Loader2 } from "lucide-react";
+import HamsterLoader from "../components/ui/HamsterLoader";
 
 const Home = () => {
   const [recommendedBooks, setRecommendedBooks] = useState([]);
@@ -69,9 +69,9 @@ const Home = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
-        <p className="text-gray-600">Đang tải trang chủ...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <HamsterLoader />
+        <p className="text-gray-600 mt-4">Đang tải trang chủ...</p>
       </div>
     );
   }

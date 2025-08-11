@@ -253,13 +253,13 @@ const AuthorChaptersPage = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-4">
-                      <Link
+                      {/* <Link
                         to={`/author/stories/${story.id}/chapters/${chapter.id}/edit`}
                         className="flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         <Edit size={16} className="mr-1" />
                         Sửa
-                      </Link>
+                      </Link> */}
                       <Link
                         to={`/chapters/${chapter.id}`}
                         target="_blank"
