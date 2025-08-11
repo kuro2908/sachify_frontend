@@ -37,6 +37,8 @@ const ChapterEditorPage = () => {
   const [isNewChapter, setIsNewChapter] = useState(!chapterId);
   const [previewMode, setPreviewMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchStory();
@@ -91,8 +93,8 @@ const ChapterEditorPage = () => {
     try {
       setSaving(true);
       setError("");
-
-
+      setUploadProgress(0);
+      setIsUploading(false);
 
       // Kiểm tra dữ liệu trước khi gửi
       if (!storyId) {
@@ -113,8 +115,6 @@ const ChapterEditorPage = () => {
       formData.append('contentType', chapter.contentType);
       formData.append('isPublished', isPublish);
 
-
-
       // Thêm nội dung tùy theo loại
       if (chapter.contentType === 'TEXT') {
         formData.append('content', chapter.content);
@@ -123,6 +123,23 @@ const ChapterEditorPage = () => {
         selectedFiles.forEach((file, index) => {
           formData.append('files', file);
         });
+        
+        // Bắt đầu progress tracking cho upload ảnh
+        if (selectedFiles.length > 0) {
+          setIsUploading(true);
+          setUploadProgress(0);
+          
+          // Simulate progress (vì không có real-time progress từ Firebase)
+          const progressInterval = setInterval(() => {
+            setUploadProgress(prev => {
+              if (prev >= 90) {
+                clearInterval(progressInterval);
+                return 90;
+              }
+              return prev + 10;
+            });
+          }, 1000);
+        }
       }
 
       let response;
@@ -132,6 +149,12 @@ const ChapterEditorPage = () => {
         response = await apiService.updateAuthorChapter(chapterId, formData);
       }
 
+      // Upload hoàn tất
+      if (chapter.contentType === 'IMAGES' && selectedFiles.length > 0) {
+        setUploadProgress(100);
+        setIsUploading(false);
+      }
+
       if (response.status === "success") {
         showSuccess(isNewChapter ? "Tạo chương thành công!" : "Cập nhật chương thành công!");
         navigate(`/author/stories/${storyId}/chapters`);
@@ -139,6 +162,11 @@ const ChapterEditorPage = () => {
     } catch (err) {
       console.error("Error saving chapter:", err);
       setError(err.message || "Không thể lưu chương");
+      // Reset upload progress nếu có lỗi
+      if (chapter.contentType === 'IMAGES') {
+        setUploadProgress(0);
+        setIsUploading(false);
+      }
     } finally {
       setSaving(false);
     }
@@ -186,17 +214,19 @@ const ChapterEditorPage = () => {
             </button>
             <button
               onClick={handleSaveDraft}
-              disabled={saving}
+              disabled={saving || isUploading}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : "Lưu nháp"}
+              {saving ? <Loader2 size={16} className="animate-spin" /> : 
+               isUploading ? <Loader2 size={16} className="animate-spin" /> : "Lưu nháp"}
             </button>
             <button
               onClick={handlePublish}
-              disabled={saving}
+              disabled={saving || isUploading}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : "Xuất bản ngay"}
+              {saving ? <Loader2 size={16} className="animate-spin" /> : 
+               isUploading ? <Loader2 size={16} className="animate-spin" /> : "Xuất bản ngay"}
             </button>
           </div>
         </div>
@@ -205,6 +235,17 @@ const ChapterEditorPage = () => {
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
             <AlertCircle size={20} className="mr-2" />
             {error}
+          </div>
+        )}
+        
+        {/* Upload Progress Message */}
+        {isUploading && uploadProgress > 0 && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+            <Loader2 size={20} className="mr-2 animate-spin" />
+            <div>
+              <div className="font-medium">Đang upload ảnh lên Firebase...</div>
+              <div className="text-sm">Tiến độ: {uploadProgress}% - Vui lòng đợi, quá trình này có thể mất vài phút</div>
+            </div>
           </div>
         )}
 
@@ -346,6 +387,29 @@ const ChapterEditorPage = () => {
                             </div>
                           ))}
                         </div>
+                        
+                        {/* Progress Bar cho Upload */}
+                        {isUploading && (
+                          <div className="mt-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">
+                                Đang upload lên Firebase...
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {uploadProgress}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Vui lòng đợi, quá trình này có thể mất vài phút tùy thuộc vào số lượng ảnh
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

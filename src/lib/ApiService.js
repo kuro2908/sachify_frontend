@@ -1,6 +1,7 @@
  // src/services/ApiService.js
  import { API_BASE_URL } from '../config/api.js';
- const REQUEST_TIMEOUT = 10000; // 10 seconds
+ const REQUEST_TIMEOUT = 60000; // 60 seconds - tăng từ 10s lên 60s
+ const UPLOAD_TIMEOUT = 120000; // 120 seconds - timeout riêng cho upload
 
  class ApiService {
    constructor() {
@@ -39,6 +40,15 @@
      return new Promise((_, reject) => {
        setTimeout(() => {
          reject(new Error('Request timeout'));
+       }, timeoutMs);
+     });
+   }
+
+   // Helper method to create timeout promise cho upload
+   createUploadTimeoutPromise(timeoutMs = UPLOAD_TIMEOUT) {
+     return new Promise((_, reject) => {
+       setTimeout(() => {
+         reject(new Error('Upload timeout - Vui lòng thử lại'));
        }, timeoutMs);
      });
    }
@@ -104,69 +114,87 @@
      return data;
    }
 
-   async request(endpoint, options = {}) {
-     const url = `${this.baseURL}/api${endpoint}`;
-     const config = {
-       method: "GET",
-       headers: this.getHeaders(),
-       ...options,
-     };
+     async request(endpoint, options = {}) {
+    const url = `${this.baseURL}/api${endpoint}`;
+    const config = {
+      method: "GET",
+      headers: this.getHeaders(),
+      ...options,
+    };
 
-     if (
-       options.body &&
-       typeof options.body === "object" &&
-       !(options.body instanceof FormData)
-     ) {
-       config.body = JSON.stringify(options.body);
-     }
+    if (
+      options.body &&
+      typeof options.body === "object" &&
+      !(options.body instanceof FormData)
+    ) {
+      config.body = JSON.stringify(options.body);
+    }
 
-     try {
-       // Create abort controller for timeout
-       const controller = new AbortController();
-       const timeoutPromise = this.createTimeoutPromise();
-       
-       // Race between fetch and timeout
-       const response = await Promise.race([
-         fetch(url, { ...config, signal: controller.signal }),
-         timeoutPromise.then(() => {
-           controller.abort();
-           throw new Error('Request timeout');
-         })
-       ]);
-       
-              return await this.handleResponse(response);
-     } catch (error) {
-       throw this.handleNetworkError(error, endpoint);
-     }
-   }
+    // Kiểm tra xem có phải là upload không
+    const isUpload = options.body instanceof FormData && 
+      Array.from(options.body.entries()).some(([key, value]) => 
+        key === 'files' || (value instanceof File)
+      );
 
-   async formRequest(endpoint, formData, options = {}) {
-     const url = `${this.baseURL}/api${endpoint}`;
-     const config = {
-       method: "POST",
-       headers: this.getFormHeaders(),
-       body: formData,
-       ...options,
-     };
-     try {
-       // Create abort controller for timeout
-       const controller = new AbortController();
-       const timeoutPromise = this.createTimeoutPromise();
-       
-       // Race between fetch and timeout
-       const response = await Promise.race([
-         fetch(url, { ...config, signal: controller.signal }),
-         timeoutPromise.then(() => {
-           controller.abort();
-           throw new Error('Request timeout');
-         })
-       ]);
-       
-       return await this.handleResponse(response);
-     } catch (error) {
-       throw this.handleNetworkError(error, endpoint);
-     }
-   }
+    try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      // Sử dụng timeout dài hơn cho upload
+      const timeoutPromise = isUpload ? 
+        this.createUploadTimeoutPromise() : 
+        this.createTimeoutPromise();
+      
+      // Race between fetch and timeout
+      const response = await Promise.race([
+        fetch(url, { ...config, signal: controller.signal }),
+        timeoutPromise.then(() => {
+          controller.abort();
+          throw new Error(isUpload ? 'Upload timeout - Vui lòng thử lại' : 'Request timeout');
+        })
+      ]);
+      
+      return await this.handleResponse(response);
+    } catch (error) {
+      throw this.handleNetworkError(error, endpoint);
+    }
+  }
+
+     async formRequest(endpoint, formData, options = {}) {
+    const url = `${this.baseURL}/api${endpoint}`;
+    const config = {
+      method: "POST",
+      headers: this.getFormHeaders(),
+      body: formData,
+      ...options,
+    };
+    
+    // Kiểm tra xem có phải là upload không (có files trong formData)
+    const hasFiles = Array.from(formData.entries()).some(([key, value]) => 
+      key === 'files' || (value instanceof File)
+    );
+    
+    try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      // Sử dụng timeout dài hơn cho upload
+      const timeoutPromise = hasFiles ? 
+        this.createUploadTimeoutPromise() : 
+        this.createTimeoutPromise();
+      
+      // Race between fetch and timeout
+      const response = await Promise.race([
+        fetch(url, { ...config, signal: controller.signal }),
+        timeoutPromise.then(() => {
+          controller.abort();
+          throw new Error(hasFiles ? 'Upload timeout - Vui lòng thử lại' : 'Request timeout');
+        })
+      ]);
+      
+      return await this.handleResponse(response);
+    } catch (error) {
+      throw this.handleNetworkError(error, endpoint);
+    }
+  }
  
    // =====================
    // 👤 Authentication
