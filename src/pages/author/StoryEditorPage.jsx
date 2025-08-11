@@ -107,12 +107,12 @@ const StoryEditorPage = () => {
 
     try {
       setSaving(true);
-      const response = await apiService.uploadCoverImage(file); // truyền file trực tiếp
+      setError("");
+
+      // Upload ảnh bìa mới
+      const response = await apiService.uploadCoverImage(file);
       if (response.status === "success") {
-        setStory(prev => ({
-          ...prev,
-          coverImageUrl: response.data.url // lấy đúng key url từ backend
-        }));
+        setStory(prev => ({ ...prev, coverImageUrl: response.data.url }));
         showSuccess("Tải ảnh bìa thành công!");
       }
     } catch (err) {
@@ -128,16 +128,28 @@ const StoryEditorPage = () => {
       setSaving(true);
       setError("");
 
+      // Validation
+      if (!story.title.trim()) {
+        setError("Vui lòng nhập tiêu đề truyện");
+        return;
+      }
+
+      if (story.categories.length === 0) {
+        setError("Vui lòng chọn ít nhất một thể loại");
+        return;
+      }
+
       // Extract category IDs from story.categories (which contains full category objects)
       const categoryIds = story.categories.map(cat => typeof cat === 'object' ? cat.id : cat);
 
       // Tạo FormData để gửi file ảnh bìa cùng các trường khác
       const formData = new FormData();
-      formData.append("title", story.title);
-      formData.append("description", story.description);
-      formData.append("status", "ongoing"); // Giữ nguyên status là ongoing
+      formData.append("title", story.title.trim());
+      formData.append("description", story.description.trim());
+      formData.append("status", story.status || "ongoing"); // Giữ nguyên status hiện tại
       formData.append("publicationStatus", "pending"); // Luôn gửi pending để admin duyệt
       formData.append("categoryIds", JSON.stringify(categoryIds));
+      
       // Lấy file từ input (nếu có)
       const fileInput = document.getElementById("cover-upload");
       if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -146,10 +158,10 @@ const StoryEditorPage = () => {
 
       let response;
       if (isNewStory) {
-        response = await apiService.formRequest("/stories", formData);
+        response = await apiService.createStory(formData);
       } else {
-        // Use formRequest for updates to handle file uploads consistently
-        response = await apiService.formRequest(`/stories/${id}`, formData, { method: "PATCH" });
+        // Use updateStory for updates to handle file uploads consistently
+        response = await apiService.updateStory(id, formData);
       }
 
       if (response.status === "success") {
@@ -235,6 +247,18 @@ const StoryEditorPage = () => {
           <div className="p-6">
             {/* Basic Information */}
             <div className="space-y-6">
+              {!isNewStory && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+                  <div className="flex items-center">
+                    <AlertCircle size={20} className="mr-2" />
+                    <div>
+                      <p className="font-medium">Chỉnh sửa truyện</p>
+                      <p className="text-sm">Sau khi chỉnh sửa, truyện sẽ được gửi để admin duyệt lại.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tiêu đề truyện *
@@ -291,12 +315,27 @@ const StoryEditorPage = () => {
                 </label>
                 <div className="flex items-center space-x-4">
                   {story.coverImageUrl && (
-                    <img
-                      src={story.coverImageUrl}
-                      alt="Cover"
-                      className="w-20 h-28 object-cover rounded-lg border"
-                      style={{ minWidth: 80, minHeight: 112 }}
-                    />
+                    <div className="relative">
+                      <img
+                        src={story.coverImageUrl}
+                        alt="Cover"
+                        className="w-20 h-28 object-cover rounded-lg border"
+                        style={{ minWidth: 80, minHeight: 112 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStory(prev => ({ ...prev, coverImageUrl: "" }));
+                          // Reset file input
+                          const fileInput = document.getElementById("cover-upload");
+                          if (fileInput) fileInput.value = "";
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                        title="Xóa ảnh bìa hiện tại"
+                      >
+                        ×
+                      </button>
+                    </div>
                   )}
                   <div>
                     <input
@@ -305,15 +344,19 @@ const StoryEditorPage = () => {
                       onChange={handleCoverImageUpload}
                       className="hidden"
                       id="cover-upload"
-                      disabled={!!story.coverImageUrl}
                     />
                     <label
                       htmlFor="cover-upload"
-                      className={`cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors ${story.coverImageUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <Upload size={16} className="mr-2" />
-                      {story.coverImageUrl ? "Đã có ảnh bìa" : "Tải ảnh bìa"}
+                      {story.coverImageUrl ? "Thay đổi ảnh bìa" : "Tải ảnh bìa"}
                     </label>
+                    {story.coverImageUrl && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Click để thay đổi ảnh bìa
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

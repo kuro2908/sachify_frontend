@@ -241,10 +241,17 @@
    }
 
    async updateStory(id, storyData) {
-     return this.request(`/stories/${id}`, { 
-       method: "PATCH", 
-       body: storyData 
+     // Nếu storyData đã là FormData, sử dụng trực tiếp
+     if (storyData instanceof FormData) {
+       return this.formRequest(`/stories/${id}`, storyData, { method: "PATCH" });
+     }
+     
+     // Nếu không, tạo FormData từ object
+     const formData = new FormData();
+     Object.entries(storyData).forEach(([key, value]) => {
+       if (value !== undefined && value !== null) formData.append(key, value);
      });
+     return this.formRequest(`/stories/${id}`, formData, { method: "PATCH" });
    }
  
      async getStoryRankings(params = {}) {
