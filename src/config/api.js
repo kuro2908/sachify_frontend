@@ -11,7 +11,7 @@ export const API_CONFIG = {
   PORT_FORWARD: "https://150fncr1-5000.asse.devtunnels.ms",
   
   // For production (update when deploying)
-  PRODUCTION: "https://your-production-domain.com"
+  PRODUCTION: "https://sachify-backend-2.onrender.com"
 };
 
 // Current active API URL
@@ -20,7 +20,7 @@ export const API_CONFIG = {
 // - VS_CODE_PORT_FORWARD: for VS Code port forwarding (recommended)
 // - PORT_FORWARD: for external tools
 // - PRODUCTION: for production deployment
-export const API_BASE_URL = API_CONFIG.LOCAL;
+export const API_BASE_URL = API_CONFIG.PRODUCTION;
 
 // API endpoints
 export const API_ENDPOINTS = {
