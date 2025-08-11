@@ -56,7 +56,7 @@ const HeroSlider = ({ books = [] }) => {
                       <div className="inline-block bg-blue-500 px-3 py-1 rounded-full text-sm font-medium mb-3">
                         {book.categories?.[0]?.name || "Không phân loại"}
                       </div>
-                      <h2 className="text-3xl font-bold mb-3">{book.title}</h2>
+                      <h2 className="text-3xl font-bold mb-3 line-clamp-2 leading-tight">{book.title}</h2>
                       <p className="text-xl text-blue-100 mb-4">
                         bởi {book.author?.username || "Không xác định"}
                       </p>
