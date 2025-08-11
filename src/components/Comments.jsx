@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, useRef } from "react";
-import { Send, User, Star, MessageCircle, X } from "lucide-react";
+import { Send, User, Star, MessageCircle, X, Trash2 } from "lucide-react";
 import apiService from "../lib/ApiService";
 import useAuthStore from "../store/authStore";
 import { useToast } from "../contexts/ToastContext";
@@ -90,12 +90,15 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
   const [submitting, setSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [submittingReply, setSubmittingReply] = useState(false);
-  const { user, isAuthenticated } = useAuthStore();
+  const [deletingComment, setDeletingComment] = useState(null);
+  const { user, isAuthenticated, canDeleteComment } = useAuthStore();
   const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     fetchComments();
   }, [chapterId, storyId, type]);
+
+  const [storyAuthorId, setStoryAuthorId] = useState(null);
 
   const fetchComments = React.useCallback(async () => {
     try {
@@ -103,6 +106,23 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
       let response;
       
       if (type === "chapter") {
+        try {
+          // Lấy thông tin chapter để có storyId
+          const chapterResponse = await apiService.getChapter(chapterId);
+          if (chapterResponse.status === "success" && chapterResponse.data.chapter) {
+            const chapter = chapterResponse.data.chapter;
+            // Lấy thông tin truyện để có author ID
+            if (chapter.storyId) {
+              const storyResponse = await apiService.getStory(chapter.storyId);
+              if (storyResponse.status === "success" && storyResponse.data.story) {
+                setStoryAuthorId(storyResponse.data.story.author?.id);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn("Could not fetch chapter info for author check:", error);
+        }
+        
         response = await apiService.getChapterComments(chapterId);
         if (response.status === "success") {
           setComments(response.data.comments || []);
@@ -112,6 +132,7 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
         response = await apiService.getStory(storyId);
         if (response.status === "success") {
           const story = response.data.story;
+          setStoryAuthorId(story.author?.id); // Lưu author ID của truyện
           const allComments = [];
           
           // Fetch comments from all chapters
@@ -210,13 +231,37 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
     }
   }, [isAuthenticated, replyingTo, chapterId, showSuccess, showError, fetchComments]);
 
+  const handleDeleteComment = async (commentId) => {
+    if (!isAuthenticated()) return;
 
+    // Xác nhận trước khi xóa
+    const confirmDelete = window.confirm(
+      "Bạn có chắc chắn muốn xóa bình luận này? Hành động này không thể hoàn tác."
+    );
+    
+    if (!confirmDelete) return;
 
+    try {
+      setDeletingComment(commentId);
+      const response = await apiService.deleteComment(commentId);
+
+      if (response.status === "success") {
+        showSuccess("Bình luận đã được xóa thành công!");
+        fetchComments(); // Refresh comments
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      showError("Không thể xóa bình luận");
+    } finally {
+      setDeletingComment(null);
+    }
+  };
 
 
   // CommentItem component - memoized to prevent re-renders
-  const CommentItem = memo(({ comment, level = 0 }) => {
+  const CommentItem = memo(({ comment, level = 0, storyAuthorId }) => {
     const hasReplies = comment.replies && comment.replies.length > 0;
+    const canDelete = canDeleteComment(comment.user?.id, storyAuthorId);
     
     return (
       <div className={`${level > 0 ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''}`}>
@@ -241,16 +286,35 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
                   {comment.content}
                 </p>
                 
-                {/* Reply button - only for chapter comments and not too deep */}
-                {type === "chapter" && level < 2 && isAuthenticated() && (
-                  <button
-                    onClick={() => handleReply(comment.id, comment.user?.username)}
-                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                  >
-                    <MessageCircle size={14} />
-                    Trả lời
-                  </button>
-                )}
+                <div className="flex items-center gap-3 mt-2">
+                  {/* Reply button - only for chapter comments and not too deep */}
+                  {type === "chapter" && level < 2 && isAuthenticated() && (
+                    <button
+                      onClick={() => handleReply(comment.id, comment.user?.username)}
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <MessageCircle size={14} />
+                      Trả lời
+                    </button>
+                  )}
+                  
+                  {/* Delete button - only show if user has permission */}
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDeleteComment(comment.id)}
+                      disabled={deletingComment === comment.id}
+                      className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Xóa bình luận"
+                    >
+                      {deletingComment === comment.id ? (
+                        <div className="w-3 h-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                      Xóa
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -270,7 +334,7 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
         {hasReplies && (
           <div className="space-y-2">
             {comment.replies.map((reply) => (
-              <CommentItem key={reply.id} comment={reply} level={level + 1} />
+              <CommentItem key={reply.id} comment={reply} level={level + 1} storyAuthorId={storyAuthorId} />
             ))}
           </div>
         )}
@@ -346,7 +410,11 @@ const Comments = ({ chapterId, storyId, type = "chapter" }) => {
         ) : (
           <div className="space-y-4">
             {comments.map((comment) => (
-              <CommentItem key={comment.id} comment={comment} />
+              <CommentItem 
+                key={comment.id} 
+                comment={comment} 
+                storyAuthorId={storyAuthorId}
+              />
             ))}
           </div>
         )}

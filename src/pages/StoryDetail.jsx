@@ -4,6 +4,7 @@ import apiService from "../lib/ApiService";
 import useAuthStore from "../store/authStore";
 import Comments from "../components/Comments";
 import RatingModal from "../components/RatingModal";
+import Toast from "../components/Toast";
 import {
   Star,
   Eye,
@@ -17,6 +18,7 @@ import {
   Loader2,
   ChevronRight,
   ChevronLeft,
+  Share2,
 } from "lucide-react";
 
 const StoryDetail = () => {
@@ -32,6 +34,7 @@ const StoryDetail = () => {
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [userRating, setUserRating] = useState(null);
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
 
   useEffect(() => {
     fetchStoryDetail();
@@ -140,6 +143,35 @@ const StoryDetail = () => {
     setUserRating(rating);
     // Refresh story data to update average rating and review count
     fetchStoryDetail();
+  };
+
+  const handleShare = async () => {
+    try {
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      
+      // Hiển thị toast thông báo
+      setShowShareToast(true);
+      
+      // Tự động ẩn toast sau 3 giây
+      setTimeout(() => {
+        setShowShareToast(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Không thể copy link:', err);
+      // Fallback cho trình duyệt cũ
+      const textArea = document.createElement('textarea');
+      textArea.value = window.location.href;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      setShowShareToast(true);
+      setTimeout(() => {
+        setShowShareToast(false);
+      }, 3000);
+    }
   };
 
   const formatNumber = (num) => {
@@ -343,6 +375,14 @@ const StoryDetail = () => {
                   </button>
 
                   <button
+                    onClick={handleShare}
+                    className="flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <Share2 className="h-5 w-5 mr-2" />
+                    Chia sẻ
+                  </button>
+
+                  <button
                     onClick={handleRatingClick}
                     disabled={ratingLoading}
                     className="flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-colors"
@@ -508,6 +548,15 @@ const StoryDetail = () => {
         storyTitle={story?.title}
         currentRating={userRating}
         onRatingSubmitted={handleRatingSubmitted}
+      />
+
+      {/* Share Toast */}
+      <Toast
+        message="Đã sao chép liên kết!"
+        type="success"
+        isVisible={showShareToast}
+        onClose={() => setShowShareToast(false)}
+        position="bottom-right"
       />
     </div>
   );

@@ -76,6 +76,26 @@ const useAuthStore = create(
         return ["author", "admin"].includes(user?.role);
       },
 
+      // Kiểm tra quyền xóa comment
+      canDeleteComment: (commentUserId, storyAuthorId) => {
+        const { user } = get();
+        if (!user) return false;
+        
+        // Admin có thể xóa mọi comment
+        if (user.role === "admin") return true;
+        
+        // Manager có thể xóa mọi comment
+        if (user.role === "manager") return true;
+        
+        // Author của truyện có thể xóa mọi comment trong truyện của mình
+        if (user.role === "author" && storyAuthorId && user.id === storyAuthorId) return true;
+        
+        // Người đăng comment có thể xóa comment của mình
+        if (user.id === commentUserId) return true;
+        
+        return false;
+      },
+
       getCurrentUser: () => get().user,
       getToken: () => get().token,
     }),

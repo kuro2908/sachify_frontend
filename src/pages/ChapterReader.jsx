@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import apiService from "../lib/ApiService";
 import useAuthStore from "../store/authStore";
 import Comments from "../components/Comments";
+import Toast from "../components/Toast";
 import {
   ChevronLeft,
   ChevronRight,
@@ -30,6 +31,7 @@ const ChapterReader = () => {
   const [lineHeight, setLineHeight] = useState(1.6);
   const [theme, setTheme] = useState("light");
   const [showSettings, setShowSettings] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
 
 
   useEffect(() => {
@@ -142,6 +144,35 @@ const ChapterReader = () => {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      
+      // Hiển thị toast thông báo
+      setShowShareToast(true);
+      
+      // Tự động ẩn toast sau 3 giây
+      setTimeout(() => {
+        setShowShareToast(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Không thể copy link:', err);
+      // Fallback cho trình duyệt cũ
+      const textArea = document.createElement('textarea');
+      textArea.value = window.location.href;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      setShowShareToast(true);
+      setTimeout(() => {
+        setShowShareToast(false);
+      }, 3000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -214,6 +245,7 @@ const ChapterReader = () => {
                 <Settings size={20} />
               </button>
               <button
+                onClick={handleShare}
                 className={`p-2 rounded-lg hover:bg-gray-100 ${themeStyles.text}`}
               >
                 <Share2 size={20} />
@@ -331,6 +363,15 @@ const ChapterReader = () => {
       >
         <Settings size={24} />
       </button>
+
+      {/* Share Toast */}
+      <Toast
+        message="Đã sao chép liên kết!"
+        type="success"
+        isVisible={showShareToast}
+        onClose={() => setShowShareToast(false)}
+        position="bottom-center"
+      />
 
       {/* Chapter Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
