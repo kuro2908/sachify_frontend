@@ -11,7 +11,7 @@ export const API_CONFIG = {
   PORT_FORWARD: "https://150fncr1-5000.asse.devtunnels.ms",
   
   // For production (update when deploying)
-  PRODUCTION: "https://sachify-backend.onrender.com"
+  PRODUCTION: "https://sachify-backend-1.onrender.com"
 };
 
 // Current active API URL
