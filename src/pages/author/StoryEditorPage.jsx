@@ -25,6 +25,7 @@ const StoryEditorPage = () => {
     description: "",
     categories: [],
     coverImageUrl: "",
+    status: "ongoing", // Thêm status mặc định
     isPublished: false
   });
   const [categories, setCategories] = useState([]);
@@ -118,6 +119,9 @@ const StoryEditorPage = () => {
     } catch (err) {
       console.error("Error uploading cover image:", err);
       showError("Không thể tải ảnh bìa");
+      // Reset file input nếu upload thất bại
+      const fileInput = document.getElementById("cover-upload");
+      if (fileInput) fileInput.value = "";
     } finally {
       setSaving(false);
     }
@@ -134,9 +138,43 @@ const StoryEditorPage = () => {
         return;
       }
 
+      if (!story.description.trim()) {
+        setError("Vui lòng nhập mô tả truyện");
+        return;
+      }
+
+      if (story.description.trim().length < 10) {
+        setError("Mô tả truyện phải có ít nhất 10 ký tự");
+        return;
+      }
+
       if (story.categories.length === 0) {
         setError("Vui lòng chọn ít nhất một thể loại");
         return;
+      }
+
+      if (!story.status) {
+        setError("Vui lòng chọn trạng thái truyện");
+        return;
+      }
+
+      // Kiểm tra ảnh bìa - bắt buộc phải có
+      const fileInput = document.getElementById("cover-upload");
+      const hasNewImage = fileInput && fileInput.files && fileInput.files[0];
+      const hasExistingImage = story.coverImageUrl && story.coverImageUrl.trim() !== "";
+      
+      if (!hasNewImage && !hasExistingImage) {
+        setError("Vui lòng tải ảnh bìa cho truyện");
+        return;
+      }
+
+      // Nếu có ảnh hiện tại và không có ảnh mới, cần đảm bảo ảnh hiện tại được giữ lại
+      if (hasExistingImage && !hasNewImage) {
+        // Không cho phép submit nếu đã xóa ảnh hiện tại mà không có ảnh mới
+        if (story.coverImageUrl === "") {
+          setError("Vui lòng tải ảnh bìa mới hoặc giữ lại ảnh hiện tại");
+          return;
+        }
       }
 
       // Extract category IDs from story.categories (which contains full category objects)
@@ -146,14 +184,37 @@ const StoryEditorPage = () => {
       const formData = new FormData();
       formData.append("title", story.title.trim());
       formData.append("description", story.description.trim());
-      formData.append("status", story.status || "ongoing"); // Giữ nguyên status hiện tại
+      formData.append("status", story.status || "ongoing"); // Đảm bảo luôn có status
       formData.append("publicationStatus", "pending"); // Luôn gửi pending để admin duyệt
       formData.append("categoryIds", JSON.stringify(categoryIds));
       
+      // Debug: Log FormData để kiểm tra
+      console.log("FormData being sent:", {
+        title: story.title.trim(),
+        description: story.description.trim(),
+        status: story.status || "ongoing",
+        publicationStatus: "pending",
+        categoryIds: categoryIds,
+        hasNewImage: hasNewImage,
+        hasExistingImage: hasExistingImage
+      });
+      
+      // Debug: Kiểm tra FormData entries
+      console.log("=== FormData Entries ===");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+      console.log("=== End FormData Entries ===");
+      
       // Lấy file từ input (nếu có)
-      const fileInput = document.getElementById("cover-upload");
-      if (fileInput && fileInput.files && fileInput.files[0]) {
+      if (hasNewImage) {
         formData.append("coverImage", fileInput.files[0]);
+        console.log("Cover image file:", fileInput.files[0]);
+        
+        // Nếu có ảnh mới, xóa ảnh cũ khỏi state để tránh nhầm lẫn
+        if (hasExistingImage) {
+          setStory(prev => ({ ...prev, coverImageUrl: "" }));
+        }
       }
 
       let response;
@@ -261,7 +322,7 @@ const StoryEditorPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tiêu đề truyện *
+                  Tiêu đề <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -276,21 +337,25 @@ const StoryEditorPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mô tả truyện
+                  Mô tả <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="description"
                   value={story.description}
                   onChange={handleInputChange}
-                  rows={6}
+                  rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập mô tả truyện..."
+                  placeholder="Mô tả truyện (tối thiểu 10 ký tự)"
+                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {story.description.length}/1000 ký tự
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Thể loại
+                  Thể loại <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {categories.map((category) => (
@@ -311,7 +376,7 @@ const StoryEditorPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ảnh bìa
+                  Ảnh bìa <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center space-x-4">
                   {story.coverImageUrl && (
@@ -325,9 +390,18 @@ const StoryEditorPage = () => {
                       <button
                         type="button"
                         onClick={() => {
+                          // Chỉ cho phép xóa ảnh nếu có file mới được chọn
+                          const fileInput = document.getElementById("cover-upload");
+                          const hasNewImage = fileInput && fileInput.files && fileInput.files[0];
+                          
+                          if (!hasNewImage) {
+                            showError("Vui lòng chọn ảnh bìa mới trước khi xóa ảnh hiện tại");
+                            return;
+                          }
+                          
+                          // Xóa ảnh hiện tại và reset coverImageUrl
                           setStory(prev => ({ ...prev, coverImageUrl: "" }));
                           // Reset file input
-                          const fileInput = document.getElementById("cover-upload");
                           if (fileInput) fileInput.value = "";
                         }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
@@ -357,17 +431,45 @@ const StoryEditorPage = () => {
                         Click để thay đổi ảnh bìa
                       </p>
                     )}
+                    {!story.coverImageUrl && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Ảnh bìa là bắt buộc
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Story Status Toggle */}
+              {/* Story Status Selector for New Stories */}
+              {isNewStory && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Trạng thái truyện <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="status"
+                    value={story.status}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="ongoing">Đang viết</option>
+                    <option value="completed">Đã hoàn thành</option>
+                    <option value="hiatus">Tạm ngưng</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Chọn trạng thái hiện tại của truyện
+                  </p>
+                </div>
+              )}
+
+              {/* Story Status Toggle for Existing Stories */}
               {!isNewStory && (
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-1">Trạng thái truyện</h4>
                     <p className="text-sm text-gray-500">
-                      {story.status === 'completed' ? 'Đã hoàn thành' : 'Đang viết'}
+                      {story.status === 'completed' ? 'Đã hoàn thành' : story.status === 'hiatus' ? 'Tạm ngưng' : 'Đang viết'}
                     </p>
                   </div>
                   <button

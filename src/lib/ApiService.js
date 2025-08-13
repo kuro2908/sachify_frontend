@@ -261,6 +261,12 @@
   }
  
      async createStory(storyData) {
+    // Nếu storyData đã là FormData, sử dụng trực tiếp
+    if (storyData instanceof FormData) {
+      return this.formRequest("/stories", storyData);
+    }
+    
+    // Nếu không, tạo FormData từ object
     const formData = new FormData();
     Object.entries(storyData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) formData.append(key, value);
@@ -527,6 +533,21 @@
 
   async requestAuthorRole() {
     return this.request("/users/request-author-role", { method: "POST" });
+  }
+
+  // =====================
+  // 👥 Users
+  // =====================
+  async getUserProfile(userId) {
+    return this.request(`/users/${userId}`);
+  }
+
+  async getTopAuthorsByStoryCount(limit = 10) {
+    return this.request(`/users/rankings/most-stories?limit=${limit}`);
+  }
+
+  async getTopAuthorsByRating(limit = 10) {
+    return this.request(`/users/rankings/highest-rating?limit=${limit}`);
   }
 
    
